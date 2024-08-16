@@ -10,8 +10,10 @@ from PyQt5.QtGui import QFont, QPixmap
 from datetime import datetime, timedelta
 
 CONNECT_LED = False  # True
+Fullscreen_Mode = False  # Set this to True for full-screen mode
+
 if CONNECT_LED:
-    from gpio import blink_led
+    from utils.gpio import blink_led
 else:
     # Dummy function to represent blink_led functionality
     def blink_led(pin):
@@ -21,9 +23,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Set window title and geometry
+        # Set window title
         self.setWindowTitle('Super Oxygen Water Generator Model S1')
-        self.setGeometry(50, 50, 800, 480)
+
+        # Check if Fullscreen_Mode is True
+        if Fullscreen_Mode:
+            self.showFullScreen()
+        else:
+            self.setGeometry(0, 0, 800, 480)
 
         # Data and timers
         self.o2_concentration = 250  # initial value for dissolved oxygen concentration
@@ -258,34 +265,14 @@ class MainWindow(QMainWindow):
             self.power_button.setStyleSheet("background-color: white; color: black;")
             blink_led(17)  # Replace with actual GPIO pin if necessary
             self.system_booting_label.setText("System shut down...")
-            self.reset_all_buttons()
 
     def set_system_running(self):
         self.system_booting_label.setText("System now working!")
 
-    def reset_all_buttons(self):
-        # Reset all buttons to OFF state
-        self.main_pump_button.setChecked(False)
-        self.main_pump_button.setStyleSheet("background-color: white; color: black;")
-        self.speed_display_main.setText('')
-
-        self.cycle_pump_button.setChecked(False)
-        self.cycle_pump_button.setStyleSheet("background-color: white; color: black;")
-        self.speed_display_cycle.setText('')
-
-        self.chiller_button.setChecked(False)
-        self.chiller_button.setStyleSheet("background-color: white; color: black;")
-
-        self.auto_mode1_button.setChecked(False)
-        self.auto_mode1_button.setStyleSheet("background-color: white; color: black;")
-
-        self.auto_mode2_button.setChecked(False)
-        self.auto_mode2_button.setStyleSheet("background-color: white; color: black;")
-
     def check_power_and_confirm(self, action, button):
         if not self.power_button.isChecked():
             QMessageBox.warning(self, 'Warning', 'Power is off. Please turn on the power first.')
-            button.setChecked(False)  # Ensure the button reverts to the OFF state
+            button.setChecked(False)  # Ensure the button stays OFF
             return
         self.confirm_action(action, button)
 
