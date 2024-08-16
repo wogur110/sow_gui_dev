@@ -9,8 +9,10 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPixmap
 from datetime import datetime, timedelta
 
-CONNECT_LED = False  # True
-Fullscreen_Mode = False  # Set this to True for full-screen mode
+QApplication.setStyle("Fusion")
+
+CONNECT_LED = True  # True
+Fullscreen_Mode = True  # Set this to True for full-screen mode
 
 if CONNECT_LED:
     from gpio import blink_led
@@ -56,8 +58,8 @@ class MainWindow(QMainWindow):
         main_layout = QGridLayout()
 
         # Fonts
-        large_font = QFont("Arial", 24, QFont.Bold)
-        medium_font = QFont("Arial", 18, QFont.Bold)
+        large_font = QFont("Arial", 20, QFont.Bold)
+        medium_font = QFont("Arial", 13, QFont.Bold)
         small_font = QFont("Arial", 12, QFont.Bold)
 
         # Set fixed sizes for rows and columns
@@ -99,7 +101,7 @@ class MainWindow(QMainWindow):
         self.power_button = QPushButton('POWER', self)
         self.power_button.setFont(medium_font)
         self.power_button.setStyleSheet("background-color: white; color: black;")
-        self.power_button.setFixedSize(150, 80)
+        self.power_button.setFixedSize(120, 80)
         self.power_button.setCheckable(True)
         self.power_button.clicked.connect(lambda: self.confirm_action(self.toggle_power, self.power_button))
         power_and_booting_layout.addWidget(self.power_button, alignment=Qt.AlignLeft)
@@ -114,11 +116,11 @@ class MainWindow(QMainWindow):
         # Third row: Pump and Chiller buttons
         pump_buttons_layout = QHBoxLayout()
 
-        self.main_pump_button = QPushButton('Main PUMP SW\n(On / Off)', self)
+        self.main_pump_button = QPushButton('Main PUMP\n(On / Off)', self)
         self.main_pump_button.setFont(small_font)
         self.main_pump_button.setCheckable(True)
         self.main_pump_button.setStyleSheet("background-color: white; color: black;")
-        self.main_pump_button.setFixedSize(150, 80)
+        self.main_pump_button.setFixedSize(120, 80)
         self.main_pump_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump1, self.main_pump_button))
         pump_buttons_layout.addWidget(self.main_pump_button, alignment=Qt.AlignLeft)
 
@@ -141,15 +143,15 @@ class MainWindow(QMainWindow):
 
         self.speed_display_main = QLabel('', self)  # Default blank text
         self.speed_display_main.setFont(small_font)
-        self.speed_display_main.setFixedSize(40, 20)  # Fixed space for the display
+        self.speed_display_main.setFixedSize(30, 20)  # Fixed space for the display
         self.speed_display_main.setAlignment(Qt.AlignCenter)
         pump_buttons_layout.addWidget(self.speed_display_main)
 
-        self.cycle_pump_button = QPushButton('Cycle PUMP SW\n(On / Off)', self)
+        self.cycle_pump_button = QPushButton('Cycle PUMP\n(On / Off)', self)
         self.cycle_pump_button.setFont(small_font)
         self.cycle_pump_button.setCheckable(True)
         self.cycle_pump_button.setStyleSheet("background-color: white; color: black;")
-        self.cycle_pump_button.setFixedSize(150, 80)
+        self.cycle_pump_button.setFixedSize(120, 80)
         self.cycle_pump_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump2, self.cycle_pump_button))
         pump_buttons_layout.addWidget(self.cycle_pump_button, alignment=Qt.AlignCenter)
 
@@ -172,7 +174,7 @@ class MainWindow(QMainWindow):
 
         self.speed_display_cycle = QLabel('', self)  # Default blank text
         self.speed_display_cycle.setFont(small_font)
-        self.speed_display_cycle.setFixedSize(40, 20)  # Fixed space for the display
+        self.speed_display_cycle.setFixedSize(30, 20)  # Fixed space for the display
         self.speed_display_cycle.setAlignment(Qt.AlignCenter)
         pump_buttons_layout.addWidget(self.speed_display_cycle)
 
@@ -180,7 +182,7 @@ class MainWindow(QMainWindow):
         self.chiller_button.setFont(small_font)
         self.chiller_button.setCheckable(True)
         self.chiller_button.setStyleSheet("background-color: white; color: black;")
-        self.chiller_button.setFixedSize(150, 80)
+        self.chiller_button.setFixedSize(120, 80)
         self.chiller_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump3, self.chiller_button))
         pump_buttons_layout.addWidget(self.chiller_button, alignment=Qt.AlignRight)
 
