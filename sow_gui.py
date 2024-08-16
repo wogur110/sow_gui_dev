@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 
 QApplication.setStyle("Fusion")
 
-CONNECT_LED = True  # True
-Fullscreen_Mode = True  # Set this to True for full-screen mode
+CONNECT_LED = False  # True
+Fullscreen_Mode = False  # Set this to True for full-screen mode
 
 if CONNECT_LED:
     from gpio import blink_led
@@ -262,14 +262,26 @@ class MainWindow(QMainWindow):
             self.power_button.setStyleSheet("background-color: red; color: white;")
             self.system_booting_label.setText("System now booting...")
             blink_led(6)  # Replace with actual GPIO pin if necessary
-            QTimer.singleShot(5000, self.set_system_running)  # Set system as running after 5 seconds
         else:
             self.power_button.setStyleSheet("background-color: white; color: black;")
-            blink_led(6)  # Replace with actual GPIO pin if necessary
             self.system_booting_label.setText("System shut down...")
+            blink_led(6)  # Replace with actual GPIO pin if necessary
+            self.system_booting_label.setText("System Off...")
+            self.turn_off_all_buttons()  # Turn off all SW and Auto Mode buttons when Power is turned off
 
     def set_system_running(self):
         self.system_booting_label.setText("System now working!")
+
+    def turn_off_all_buttons(self):
+        """ Turn off all SW and Auto Mode buttons and reset their styles. """
+        for button in [self.main_pump_button, self.cycle_pump_button, self.chiller_button,
+                       self.auto_mode1_button, self.auto_mode2_button]:
+            button.setChecked(False)
+            button.setStyleSheet("background-color: white; color: black;")
+            # Reset the speed displays for pumps
+            if button in [self.main_pump_button, self.cycle_pump_button]:
+                speed_display = self.speed_display_main if button == self.main_pump_button else self.speed_display_cycle
+                speed_display.setText('')
 
     def check_power_and_confirm(self, action, button):
         if not self.power_button.isChecked():
