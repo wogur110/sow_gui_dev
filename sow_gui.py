@@ -259,11 +259,11 @@ class MainWindow(QMainWindow):
         if self.power_button.isChecked():
             self.power_button.setStyleSheet("background-color: red; color: white;")
             self.system_booting_label.setText("System now booting...")
-            blink_led(17)  # Replace with actual GPIO pin if necessary
+            blink_led(6)  # Replace with actual GPIO pin if necessary
             QTimer.singleShot(5000, self.set_system_running)  # Set system as running after 5 seconds
         else:
             self.power_button.setStyleSheet("background-color: white; color: black;")
-            blink_led(17)  # Replace with actual GPIO pin if necessary
+            blink_led(6)  # Replace with actual GPIO pin if necessary
             self.system_booting_label.setText("System shut down...")
 
     def set_system_running(self):
@@ -281,31 +281,31 @@ class MainWindow(QMainWindow):
         if button.isChecked():
             button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_main.setText('1.0')  # Set default speed
-            blink_led(27)  # Replace with actual GPIO pin if necessary
+            blink_led(13)  # Replace with actual GPIO pin if necessary
         else:
             button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_main.setText('')  # Clear speed display
-            blink_led(27)  # Replace with actual GPIO pin if necessary
+            blink_led(13)  # Replace with actual GPIO pin if necessary
             
     def toggle_pump2(self):
         button = self.sender()
         if button.isChecked():
             button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_cycle.setText('1.0')  # Set default speed
-            blink_led(22)  # Replace with actual GPIO pin if necessary
+            blink_led(19)  # Replace with actual GPIO pin if necessary
         else:
             button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_cycle.setText('')  # Clear speed display
-            blink_led(22)  # Replace with actual GPIO pin if necessary
+            blink_led(19)  # Replace with actual GPIO pin if necessary
             
     def toggle_pump3(self):
         button = self.sender()
         if button.isChecked():
             button.setStyleSheet("background-color: blue; color: white;")
-            blink_led(23)  # Replace with actual GPIO pin if necessary
+            blink_led(26)  # Replace with actual GPIO pin if necessary
         else:
             button.setStyleSheet("background-color: white; color: black;")
-            blink_led(23)  # Replace with actual GPIO pin if necessary
+            blink_led(26)  # Replace with actual GPIO pin if necessary
 
     def toggle_auto_mode(self):
         button = self.sender()
