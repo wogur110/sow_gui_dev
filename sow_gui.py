@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 CONNECT_LED = False  # True
 if CONNECT_LED:
-    from utils.gpio import blink_led
+    from gpio import blink_led
 else:
     # Dummy function to represent blink_led functionality
     def blink_led(pin):
@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
 
         # Set window title and geometry
         self.setWindowTitle('Super Oxygen Water Generator Model S1')
-        self.setGeometry(0, 0, 800, 480)
+        self.setGeometry(50, 50, 800, 480)
 
         # Data and timers
         self.o2_concentration = 250  # initial value for dissolved oxygen concentration
