@@ -13,7 +13,7 @@ CONNECT_LED = False  # True
 Fullscreen_Mode = False  # Set this to True for full-screen mode
 
 if CONNECT_LED:
-    from utils.gpio import blink_led
+    from gpio import blink_led
 else:
     # Dummy function to represent blink_led functionality
     def blink_led(pin):
