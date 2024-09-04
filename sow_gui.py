@@ -12,14 +12,21 @@ from datetime import datetime, timedelta
 QApplication.setStyle("Fusion")
 
 CONNECT_LED = False  # True
-Fullscreen_Mode = False  # Set this to True for full-screen mode
+FULLSCREEN_MODE = False  # Set this to True for full-screen mode
+
+POWER_GPIO = 6
+PUMP1_GPIO = 13
+PUMP2_GPIO = 19
+PUMP3_GPIO = 26
+BUZZER_GPIO = 5
 
 if CONNECT_LED:
-    from gpio import blink_led
+    from gpio import control_relay
 else:
-    # Dummy function to represent blink_led functionality
-    def blink_led(pin):
-        print(f"Blinking LED on pin {pin}")
+    # Dummy function to represent control_relay functionality
+    def control_relay(gpio_number, buzzer_gpio, state):
+        state_str = "ON (LOW)" if state else "OFF (HIGH)"
+        print(f"GPIO {gpio_number}: Relay {state_str}, BUZZER {buzzer_gpio} : 1 second")
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -28,8 +35,8 @@ class MainWindow(QMainWindow):
         # Set window title
         self.setWindowTitle('Super Oxygen Water Generator Model S1')
 
-        # Check if Fullscreen_Mode is True
-        if Fullscreen_Mode:
+        # Check if FULLSCREEN_MODE is True
+        if FULLSCREEN_MODE:
             self.showFullScreen()
         else:
             self.setGeometry(0, 0, 800, 480)
@@ -103,7 +110,7 @@ class MainWindow(QMainWindow):
         self.power_button.setStyleSheet("background-color: white; color: black;")
         self.power_button.setFixedSize(120, 80)
         self.power_button.setCheckable(True)
-        self.power_button.clicked.connect(lambda: self.confirm_action(self.toggle_power, self.power_button))
+        self.power_button.clicked.connect(lambda: self.toggle_power())
         power_and_booting_layout.addWidget(self.power_button, alignment=Qt.AlignLeft)
 
         self.system_booting_label = QLabel('', self)  # Default text is blank
@@ -121,7 +128,7 @@ class MainWindow(QMainWindow):
         self.main_pump_button.setCheckable(True)
         self.main_pump_button.setStyleSheet("background-color: white; color: black;")
         self.main_pump_button.setFixedSize(120, 80)
-        self.main_pump_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump1, self.main_pump_button))
+        self.main_pump_button.clicked.connect(lambda: self.check_power_and_execute(self.toggle_pump1, self.main_pump_button))
         pump_buttons_layout.addWidget(self.main_pump_button, alignment=Qt.AlignLeft)
 
         # Up/Down Toggle and Speed Display for Main Pump
@@ -152,7 +159,7 @@ class MainWindow(QMainWindow):
         self.cycle_pump_button.setCheckable(True)
         self.cycle_pump_button.setStyleSheet("background-color: white; color: black;")
         self.cycle_pump_button.setFixedSize(120, 80)
-        self.cycle_pump_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump2, self.cycle_pump_button))
+        self.cycle_pump_button.clicked.connect(lambda: self.check_power_and_execute(self.toggle_pump2, self.cycle_pump_button))
         pump_buttons_layout.addWidget(self.cycle_pump_button, alignment=Qt.AlignCenter)
 
         # Up/Down Toggle and Speed Display for Cycle Pump
@@ -183,7 +190,7 @@ class MainWindow(QMainWindow):
         self.chiller_button.setCheckable(True)
         self.chiller_button.setStyleSheet("background-color: white; color: black;")
         self.chiller_button.setFixedSize(120, 80)
-        self.chiller_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_pump3, self.chiller_button))
+        self.chiller_button.clicked.connect(lambda: self.check_power_and_execute(self.toggle_pump3, self.chiller_button))
         pump_buttons_layout.addWidget(self.chiller_button, alignment=Qt.AlignRight)
 
         main_layout.addLayout(pump_buttons_layout, 2, 0)
@@ -195,16 +202,16 @@ class MainWindow(QMainWindow):
         self.auto_mode1_button.setFont(small_font)
         self.auto_mode1_button.setCheckable(True)
         self.auto_mode1_button.setStyleSheet("background-color: white; color: black;")
-        self.auto_mode1_button.setFixedSize(200, 80)
-        self.auto_mode1_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_auto_mode, self.auto_mode1_button))
+        self.auto_mode1_button.setFixedSize(250, 80)
+        self.auto_mode1_button.clicked.connect(lambda: self.check_power_and_execute(self.toggle_auto_mode, self.auto_mode1_button))
         auto_mode_buttons_layout.addWidget(self.auto_mode1_button, alignment=Qt.AlignCenter)
 
         self.auto_mode2_button = QPushButton('Auto Mode\n(Power Save)', self)
         self.auto_mode2_button.setFont(small_font)
         self.auto_mode2_button.setCheckable(True)
         self.auto_mode2_button.setStyleSheet("background-color: white; color: black;")
-        self.auto_mode2_button.setFixedSize(200, 80)
-        self.auto_mode2_button.clicked.connect(lambda: self.check_power_and_confirm(self.toggle_auto_mode, self.auto_mode2_button))
+        self.auto_mode2_button.setFixedSize(250, 80)
+        self.auto_mode2_button.clicked.connect(lambda: self.check_power_and_execute(self.toggle_auto_mode, self.auto_mode2_button))
         auto_mode_buttons_layout.addWidget(self.auto_mode2_button, alignment=Qt.AlignCenter)
 
         main_layout.addLayout(auto_mode_buttons_layout, 3, 0)
@@ -242,7 +249,7 @@ class MainWindow(QMainWindow):
         # Fifth row: Detailed Input / Output button below output panel, aligned with Auto Mode buttons
         self.detailed_button = QPushButton('Detailed Input / Output', self)
         self.detailed_button.setFont(small_font)
-        self.detailed_button.setFixedSize(200, 50)
+        self.detailed_button.setFixedSize(300, 50)
         self.detailed_button.clicked.connect(self.show_detailed_screen)
 
         detailed_button_layout = QHBoxLayout()
@@ -260,14 +267,16 @@ class MainWindow(QMainWindow):
     def toggle_power(self):
         if self.power_button.isChecked():
             self.power_button.setStyleSheet("background-color: red; color: white;")
-            self.system_booting_label.setText("System now booting...")
-            blink_led(6)  # Replace with actual GPIO pin if necessary
+            self.system_booting_label.setText("System ON..")
+            control_relay(POWER_GPIO, BUZZER_GPIO, True)  # Set relay ON
         else:
-            self.power_button.setStyleSheet("background-color: white; color: black;")
-            self.system_booting_label.setText("System shut down...")
-            blink_led(6)  # Replace with actual GPIO pin if necessary
-            self.system_booting_label.setText("System Off...")
-            self.turn_off_all_buttons()  # Turn off all SW and Auto Mode buttons when Power is turned off
+            self.confirm_action(self.power_off)
+
+    def power_off(self):
+        self.power_button.setStyleSheet("background-color: white; color: black;")
+        control_relay(POWER_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+        self.system_booting_label.setText("System Off...")
+        self.turn_off_all_buttons()  # Turn off all SW and Auto Mode buttons when Power is turned off
 
     def set_system_running(self):
         self.system_booting_label.setText("System now working!")
@@ -282,44 +291,45 @@ class MainWindow(QMainWindow):
             if button in [self.main_pump_button, self.cycle_pump_button]:
                 speed_display = self.speed_display_main if button == self.main_pump_button else self.speed_display_cycle
                 speed_display.setText('')
+        # Turn off all relays when power is off
+        control_relay(PUMP1_GPIO, BUZZER_GPIO, False)
+        control_relay(PUMP2_GPIO, BUZZER_GPIO, False)
+        control_relay(PUMP3_GPIO, BUZZER_GPIO, False)
 
-    def check_power_and_confirm(self, action, button):
+    def check_power_and_execute(self, action, button):
         if not self.power_button.isChecked():
             QMessageBox.warning(self, 'Warning', 'Power is off. Please turn on the power first.')
-            button.setChecked(False)  # Ensure the button stays OFF
+            button.setChecked(False)  # Set the button to OFF state
             return
-        self.confirm_action(action, button)
+        action()
 
     def toggle_pump1(self):
-        button = self.sender()
-        if button.isChecked():
-            button.setStyleSheet("background-color: blue; color: white;")
+        if self.main_pump_button.isChecked():
+            self.main_pump_button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_main.setText('1.0')  # Set default speed
-            blink_led(13)  # Replace with actual GPIO pin if necessary
+            control_relay(PUMP1_GPIO, BUZZER_GPIO, True)  # Set relay ON
         else:
-            button.setStyleSheet("background-color: white; color: black;")
+            self.main_pump_button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_main.setText('')  # Clear speed display
-            blink_led(13)  # Replace with actual GPIO pin if necessary
-            
+            control_relay(PUMP1_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+
     def toggle_pump2(self):
-        button = self.sender()
-        if button.isChecked():
-            button.setStyleSheet("background-color: blue; color: white;")
+        if self.cycle_pump_button.isChecked():
+            self.cycle_pump_button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_cycle.setText('1.0')  # Set default speed
-            blink_led(19)  # Replace with actual GPIO pin if necessary
+            control_relay(PUMP2_GPIO, BUZZER_GPIO, True)  # Set relay ON
         else:
-            button.setStyleSheet("background-color: white; color: black;")
+            self.cycle_pump_button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_cycle.setText('')  # Clear speed display
-            blink_led(19)  # Replace with actual GPIO pin if necessary
-            
+            control_relay(PUMP2_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+
     def toggle_pump3(self):
-        button = self.sender()
-        if button.isChecked():
-            button.setStyleSheet("background-color: blue; color: white;")
-            blink_led(26)  # Replace with actual GPIO pin if necessary
+        if self.chiller_button.isChecked():
+            self.chiller_button.setStyleSheet("background-color: blue; color: white;")
+            control_relay(PUMP3_GPIO, BUZZER_GPIO, True)  # Set relay ON
         else:
-            button.setStyleSheet("background-color: white; color: black;")
-            blink_led(26)  # Replace with actual GPIO pin if necessary
+            self.chiller_button.setStyleSheet("background-color: white; color: black;")
+            control_relay(PUMP3_GPIO, BUZZER_GPIO, False)  # Set relay OFF
 
     def toggle_auto_mode(self):
         button = self.sender()
@@ -382,15 +392,10 @@ class MainWindow(QMainWindow):
         # Function to show detailed input/output screen
         QMessageBox.information(self, 'Detailed Input/Output', 'Switching to Detailed Input/Output Screen.')
 
-    def confirm_action(self, action, button):
-        current_state = button.isChecked()
-        button.setChecked(not current_state)  # Temporarily revert the state
-        reply = QMessageBox.question(self, 'Confirmation', 'Are you sure to change settings?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+    def confirm_action(self, action):
+        reply = QMessageBox.question(self, 'Confirmation', 'Are you sure to turn off the power?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            button.setChecked(current_state)  # Set the state to the intended state
             action()
-        else:
-            button.setChecked(not current_state)  # Revert to the original state
 
 def main():
     app = QApplication(sys.argv)
