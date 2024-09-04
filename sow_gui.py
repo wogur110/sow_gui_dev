@@ -30,6 +30,12 @@ if CONNECT_LED:
     GPIO.setup(PUMP2_GPIO, GPIO.OUT)
     GPIO.setup(PUMP3_GPIO, GPIO.OUT)
     GPIO.setup(BUZZER_GPIO, GPIO.OUT)
+    
+    # set default mode of gpio as off
+    GPIO.output(POWER_GPIO, GPIO.HIGH)
+    GPIO.output(PUMP1_GPIO, GPIO.HIGH)
+    GPIO.output(PUMP2_GPIO, GPIO.HIGH)
+    GPIO.output(PUMP3_GPIO, GPIO.HIGH)
 
     def control_relay(gpio_number, buzzer_gpio, state):
         """Controls the relay, maintaining the state after the function executes."""
