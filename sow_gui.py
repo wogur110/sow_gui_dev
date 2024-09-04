@@ -4,7 +4,7 @@ import random
 import matplotlib
 matplotlib.use('Qt5Agg')  # Set the backend to Qt5Agg
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QMainWindow, QMessageBox, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QMainWindow, QMessageBox, QFrame, QGroupBox, QDoubleSpinBox
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPixmap
 from datetime import datetime, timedelta
@@ -21,12 +21,37 @@ PUMP3_GPIO = 26
 BUZZER_GPIO = 5
 
 if CONNECT_LED:
-    from gpio import control_relay
+    import RPi.GPIO as GPIO
+    import time
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(POWER_GPIO, GPIO.OUT)
+    GPIO.setup(PUMP1_GPIO, GPIO.OUT)
+    GPIO.setup(PUMP2_GPIO, GPIO.OUT)
+    GPIO.setup(PUMP3_GPIO, GPIO.OUT)
+    GPIO.setup(BUZZER_GPIO, GPIO.OUT)
+
+    def control_relay(gpio_number, buzzer_gpio, state):
+        """Controls the relay, maintaining the state after the function executes."""
+        if state:  # Turn on (set GPIO.LOW for relay)
+            GPIO.output(gpio_number, GPIO.LOW)
+            # Activate the buzzer
+            GPIO.output(buzzer_gpio, GPIO.HIGH)  # Turn on the buzzer
+            time.sleep(1)  # Buzzer on for 1 second
+            GPIO.output(buzzer_gpio, GPIO.LOW)   # Turn off the buzzer
+            print(f"GPIO {gpio_number}: Relay ON (LOW), BUZZER ON")
+        else:  # Turn off (set GPIO.HIGH for relay)
+            GPIO.output(gpio_number, GPIO.HIGH)
+            # Activate the buzzer
+            GPIO.output(buzzer_gpio, GPIO.HIGH)  # Turn on the buzzer
+            time.sleep(1)  # Buzzer on for 1 second
+            GPIO.output(buzzer_gpio, GPIO.LOW)   # Turn off the buzzer
+            print(f"GPIO {gpio_number}: Relay OFF (HIGH), BUZZER ON")
 else:
-    # Dummy function to represent control_relay functionality
+    # Dummy function to simulate relay behavior in testing environments
     def control_relay(gpio_number, buzzer_gpio, state):
         state_str = "ON (LOW)" if state else "OFF (HIGH)"
-        print(f"GPIO {gpio_number}: Relay {state_str}, BUZZER {buzzer_gpio} : 1 second")
+        print(f"GPIO {gpio_number}: Relay {state_str}, BUZZER {buzzer_gpio} : {1 if state else 0}")
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -248,7 +273,7 @@ class MainWindow(QMainWindow):
 
         # Fifth row: Detailed Input / Output button below output panel, aligned with Auto Mode buttons
         self.detailed_button = QPushButton('Detailed Input / Output', self)
-        self.detailed_button.setFont(small_font)
+        self.detailed_button.setFont(QFont("Arial", 12, QFont.Bold))
         self.detailed_button.setFixedSize(300, 50)
         self.detailed_button.clicked.connect(self.show_detailed_screen)
 
@@ -263,18 +288,20 @@ class MainWindow(QMainWindow):
         central_widget = QWidget(self)
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+        
+        self.detailed_io_window = None
 
     def toggle_power(self):
         if self.power_button.isChecked():
             self.power_button.setStyleSheet("background-color: red; color: white;")
             self.system_booting_label.setText("System ON..")
-            control_relay(POWER_GPIO, BUZZER_GPIO, True)  # Set relay ON
+            control_relay(POWER_GPIO, BUZZER_GPIO, True)  # Set relay ON (LOW)
         else:
             self.confirm_action(self.power_off)
 
     def power_off(self):
         self.power_button.setStyleSheet("background-color: white; color: black;")
-        control_relay(POWER_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+        control_relay(POWER_GPIO, BUZZER_GPIO, False)  # Set relay OFF (HIGH)
         self.system_booting_label.setText("System Off...")
         self.turn_off_all_buttons()  # Turn off all SW and Auto Mode buttons when Power is turned off
 
@@ -287,11 +314,6 @@ class MainWindow(QMainWindow):
                        self.auto_mode1_button, self.auto_mode2_button]:
             button.setChecked(False)
             button.setStyleSheet("background-color: white; color: black;")
-            # Reset the speed displays for pumps
-            if button in [self.main_pump_button, self.cycle_pump_button]:
-                speed_display = self.speed_display_main if button == self.main_pump_button else self.speed_display_cycle
-                speed_display.setText('')
-        # Turn off all relays when power is off
         control_relay(PUMP1_GPIO, BUZZER_GPIO, False)
         control_relay(PUMP2_GPIO, BUZZER_GPIO, False)
         control_relay(PUMP3_GPIO, BUZZER_GPIO, False)
@@ -307,29 +329,29 @@ class MainWindow(QMainWindow):
         if self.main_pump_button.isChecked():
             self.main_pump_button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_main.setText('1.0')  # Set default speed
-            control_relay(PUMP1_GPIO, BUZZER_GPIO, True)  # Set relay ON
+            control_relay(PUMP1_GPIO, BUZZER_GPIO, True)  # Set relay ON (LOW)
         else:
             self.main_pump_button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_main.setText('')  # Clear speed display
-            control_relay(PUMP1_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+            control_relay(PUMP1_GPIO, BUZZER_GPIO, False)  # Set relay OFF (HIGH)
 
     def toggle_pump2(self):
         if self.cycle_pump_button.isChecked():
             self.cycle_pump_button.setStyleSheet("background-color: blue; color: white;")
             self.speed_display_cycle.setText('1.0')  # Set default speed
-            control_relay(PUMP2_GPIO, BUZZER_GPIO, True)  # Set relay ON
+            control_relay(PUMP2_GPIO, BUZZER_GPIO, True)  # Set relay ON (LOW)
         else:
             self.cycle_pump_button.setStyleSheet("background-color: white; color: black;")
             self.speed_display_cycle.setText('')  # Clear speed display
-            control_relay(PUMP2_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+            control_relay(PUMP2_GPIO, BUZZER_GPIO, False)  # Set relay OFF (HIGH)
 
     def toggle_pump3(self):
         if self.chiller_button.isChecked():
             self.chiller_button.setStyleSheet("background-color: blue; color: white;")
-            control_relay(PUMP3_GPIO, BUZZER_GPIO, True)  # Set relay ON
+            control_relay(PUMP3_GPIO, BUZZER_GPIO, True)  # Set relay ON (LOW)
         else:
             self.chiller_button.setStyleSheet("background-color: white; color: black;")
-            control_relay(PUMP3_GPIO, BUZZER_GPIO, False)  # Set relay OFF
+            control_relay(PUMP3_GPIO, BUZZER_GPIO, False)  # Set relay OFF (HIGH)
 
     def toggle_auto_mode(self):
         button = self.sender()
@@ -397,6 +419,7 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             action()
 
+# Main application entry point
 def main():
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
