@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 
 QApplication.setStyle("Fusion")
 
-CONNECT_LED = False  # True
-FULLSCREEN_MODE = False  # Set this to True for full-screen mode
+CONNECT_LED = True  # True
+FULLSCREEN_MODE = True  # Set this to True for full-screen mode
 
 POWER_GPIO = 6
 PUMP1_GPIO = 13
